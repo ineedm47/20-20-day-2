@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Focus Forge | Ready</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --text-color: #ffffff;
+            --primary-color: #ff4757;
+            --secondary-color: #2ed573;
+            --glass: rgba(255, 255, 255, 0.05);
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            transition: background-color 0.5s ease;
+        }
+
+        .container {
+            text-align: center;
+            background: var(--glass);
+            padding: 3rem;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            width: 320px;
+        }
+
+        .mode-indicators {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .mode-btn {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.2);
+            color: rgba(255,255,255,0.6);
+            padding: 5px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+        }
+
+        .mode-btn.active {
+            color: #fff;
+            border-color: #fff;
+            font-weight: bold;
+        }
+
+        .timer-display {
+            font-size: 6rem;
+            font-weight: 200;
+            margin: 20px 0;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -2px;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        button.action-btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: transform 0.1s;
+        }
+
+        button.action-btn:active {
+            transform: scale(0.95);
+        }
+
+        #start-btn {
+            background-color: #fff;
+            color: #000;
+        }
+
+        #reset-btn {
+            background-color: transparent;
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+
+        .settings-toggle {
+            background: none;
+            border: none;
+            color: rgba(255,255,255,0.4);
+            cursor: pointer;
+            font-size: 0.8rem;
+            text-decoration: underline;
+        }
+
+        .settings-panel {
+            display: none;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            text-align: left;
+        }
+
+        .settings-panel.open {
+            display: block;
+        }
+
+        .input-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .input-group label {
+            font-size: 0.9rem;
+            color: rgba(255,255,255,0.8);
+        }
+
+        .input-group input {
+            background: rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #fff;
+            padding: 5px;
+            border-radius: 4px;
+            width: 50px;
+            text-align: center;
+        }
+
+        body.mode-work { --bg-color: #1e0505; }
+        body.mode-break { --bg-color: #051e0e; }
+        
+        body.mode-work .timer-display { color: var(--primary-color); text-shadow: 0 0 20px rgba(255, 71, 87, 0.3); }
+        body.mode-break .timer-display { color: var(--secondary-color); text-shadow: 0 0 20px rgba(46, 213, 115, 0.3); }
+
+    </style>
+</head>
+<body class="mode-work">
+
+    <div class="container">
+        <div class="mode-indicators">
+            <button id="mode-work" class="mode-btn active" onclick="switchMode('work')">FOCUS</button>
+            <button id="mode-short" class="mode-btn" onclick="switchMode('short')">SHORT</button>
+            <button id="mode-long" class="mode-btn" onclick="switchMode('long')">LONG</button>
+        </div>
+
+        <div class="timer-display" id="timer">25:00</div>
+
+        <div class="controls">
+            <button id="start-btn" class="action-btn" onclick="toggleTimer()">START</button>
+            <button id="reset-btn" class="action-btn" onclick="resetTimer()">RESET</button>
+        </div>
+
+        <button class="settings-toggle" onclick="toggleSettings()">Adjust Timer Settings</button>
+
+        <div class="settings-panel" id="settings-panel">
+            <div class="input-group">
+                <label>Focus (min)</label>
+                <input type="number" id="input-work" value="25" min="1" onchange="updateCustomTime('work', this.value)">
+            </div>
+            <div class="input-group">
+                <label>Short Break (min)</label>
+                <input type="number" id="input-short" value="5" min="1" onchange="updateCustomTime('short', this.value)">
+            </div>
+            <div class="input-group">
+                <label>Long Break (min)</label>
+                <input type="number" id="input-long" value="15" min="1" onchange="updateCustomTime('long', this.value)">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const MODES = {
+            work: 25,
+            short: 5,
+            long: 15
+        };
+
+        let currentMode = 'work';
+        let timeLeft = MODES.work * 60;
+        let timerId = null;
+        let isRunning = false;
+
+        const timerDisplay = document.getElementById('timer');
+        const startBtn = document.getElementById('start-btn');
+        const body = document.body;
+        const modeBtns = document.querySelectorAll('.mode-btn');
+        const settingsPanel = document.getElementById('settings-panel');
+
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playAlarm() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(440, audioCtx.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.1);
+            
+            gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.5);
+
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + 0.5);
+        }
+
+        function updateDisplay() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            timerDisplay.textContent = timeString;
+            document.title = `${timeString} - Focus Forge`;
+        }
+
+        function switchMode(mode) {
+            if (isRunning) toggleTimer();
+            
+            currentMode = mode;
+            timeLeft = MODES[mode] * 60;
+            
+            body.className = `mode-${mode === 'work' ? 'work' : 'break'}`;
+            
+            modeBtns.forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`mode-${mode}`).classList.add('active');
+            
+            updateDisplay();
+        }
+
+        function toggleTimer() {
+            if (isRunning) {
+                clearInterval(timerId);
+                startBtn.textContent = "START";
+                isRunning = false;
+            } else {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                
+                startBtn.textContent = "PAUSE";
+                isRunning = true;
+                
+                timerId = setInterval(() => {
+                    timeLeft--;
+                    updateDisplay();
+
+                    if (timeLeft <= 0) {
+                        clearInterval(timerId);
+                        isRunning = false;
+                        startBtn.textContent = "START";
+                        playAlarm();
+                        alert("Time is up!");
+                    }
+                }, 1000);
+            }
+        }
+
+        function resetTimer() {
+            if (isRunning) toggleTimer();
+            timeLeft = MODES[currentMode] * 60;
+            updateDisplay();
+            document.title = "Focus Forge | Ready";
+        }
+
+        function toggleSettings() {
+            settingsPanel.classList.toggle('open');
+        }
+
+        function updateCustomTime(mode, value) {
+            const minutes = parseInt(value);
+            if (minutes > 0) {
+                MODES[mode] = minutes;
+                if (!isRunning && currentMode === mode) {
+                    timeLeft = minutes * 60;
+                    updateDisplay();
+                }
+            }
+        }
+
+        updateDisplay();
+    </script>
+</body>
+</html>
