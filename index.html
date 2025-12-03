@@ -295,8 +295,29 @@
                     timeLeft = minutes * 60;
                     updateDisplay();
                 }
+                saveSettings();
             }
         }
+
+        function saveSettings() {
+            localStorage.setItem('pomodoroSettings', JSON.stringify(MODES));
+        }
+
+        function loadSettings() {
+            const saved = localStorage.getItem('pomodoroSettings');
+            if (saved) {
+                const loadedModes = JSON.parse(saved);
+                MODES.work = loadedModes.work || 25;
+                MODES.short = loadedModes.short || 5;
+                MODES.long = loadedModes.long || 15;
+
+                document.getElementById('input-work').value = MODES.work;
+                document.getElementById('input-short').value = MODES.short;
+                document.getElementById('input-long').value = MODES.long;
+            }
+        }
+
+        loadSettings();
 
         updateDisplay();
     </script>
